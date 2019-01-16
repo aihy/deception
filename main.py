@@ -20,10 +20,11 @@ import torchvision.models as models
 import dataloader
 import numpy as np
 import visdom
+import progressbar
 
 viz = visdom.Visdom()
 win = viz.scatter(X=np.asarray([[0, 0]]))
-
+PPATH = "/home/zihao_wang/indata"
 
 def train(train_loader, model, criterion, optimizer, epoch, args):
     batch_time = AverageMeter()
@@ -35,38 +36,40 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
     model.train()
 
     end = time.time()
-    for i, (input, target) in enumerate(train_loader):
-        # measure data loading time
-        data_time.update(time.time() - end)
-
-        target = target.cuda(non_blocking=True)
-
-        # compute output
-        output = model(input)
-        loss = criterion(output, target)
-
-        # measure accuracy and record loss
-        acc1 = accuracy(output, target, topk=(1, ))
-        losses.update(loss.item(), input.size(0))
-        top1.update(acc1[0].item(), input.size(0))
-
-        # compute gradient and do SGD step
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-        # measure elapsed time
-        batch_time.update(time.time() - end)
-        end = time.time()
-
-        if i % args.print_freq == 0:
-            print('Epoch: [{0}][{1}/{2}]\t'
-                  'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-                  'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
-                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                  'Acc@1 {top1.val:.3f} ({top1.avg:.3f})\t'.format(
-                      epoch, i, len(train_loader), batch_time=batch_time,
-                      data_time=data_time, loss=losses, top1=top1))
+    with progressbar.ProgressBar(max_value=len(train_loader),redirect_stdout=True) as bar:
+        for i, (input, target) in enumerate(train_loader):
+            # measure data loading time
+            data_time.update(time.time() - end)
+    
+            target = target.cuda(non_blocking=True)
+    
+            # compute output
+            output = model(input)
+            loss = criterion(output, target)
+    
+            # measure accuracy and record loss
+            acc1 = accuracy(output, target, topk=(1, ))
+            losses.update(loss.item(), input.size(0))
+            top1.update(acc1[0].item(), input.size(0))
+    
+            # compute gradient and do SGD step
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+    
+            # measure elapsed time
+            batch_time.update(time.time() - end)
+            end = time.time()
+    
+            if i % args.print_freq == 0:
+                print('Epoch: [{0}][{1}/{2}]\t'
+                      'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+                      'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
+                      'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
+                      'Acc@1 {top1.val:.3f} ({top1.avg:.3f})\t'.format(
+                          epoch, i, len(train_loader), batch_time=batch_time,
+                          data_time=data_time, loss=losses, top1=top1))
+            bar.update(i)
     return top1.avg
 
 
@@ -242,13 +245,13 @@ if __name__ == "__main__":
         normalize,
     ])
 
-    train_dataset = dataloader.XixiDataset("/home/zihao_wang/data5/deception/mtcnn-pytorch/train_data.csv",
+    train_dataset = dataloader.XixiDataset(PPATH+"/deception/mtcnn-pytorch/train_data.csv",
                                            transform=train_transform)
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=args.batch_size, shuffle=True,
         num_workers=args.workers, pin_memory=True)
 
-    val_dataset = dataloader.XixiDataset("/home/zihao_wang/data5/deception/mtcnn-pytorch/val_data.csv",
+    val_dataset = dataloader.XixiDataset(PPATH+"/deception/mtcnn-pytorch/val_data.csv",
                                          transform=val_transform)
     val_loader = torch.utils.data.DataLoader(
         val_dataset, batch_size=args.batch_size, shuffle=False,
