@@ -24,7 +24,7 @@ import progressbar
 
 viz = visdom.Visdom()
 win = viz.scatter(X=np.asarray([[0, 0]]))
-PPATH = "/home/zihao_wang/indata"
+PPATH = "/home/zihao_wang/data5"
 
 def train(train_loader, model, criterion, optimizer, epoch, args):
     batch_time = AverageMeter()
